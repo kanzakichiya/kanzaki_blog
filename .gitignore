@@ -1,0 +1,30 @@
+
+
+# --- Python 忽略 ---
+venv/
+__pycache__/
+*.pyc
+
+# --- 数据库 忽略 ---
+# 忽略本地开发用的 SQLite 数据库
+database.db
+
+# --- Node.js 忽略 ---
+# 忽略前端所有的依赖包
+frontend/node_modules/
+
+# --- IDE / 操作系统 忽略 ---
+.vscode/
+.idea/
+.DS_Store
+
+# --- Docker 忽略 ---
+# 忽略 Docker 持久化的数据库数据
+postgres_data/
+
+# 忽略用户上传的图片 (我们只保留 .gitkeep)
+backend/static/images/*
+!backend/static/images/.gitkeep
+
+# --- 日志文件 ---
+*.log
