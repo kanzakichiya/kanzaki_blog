@@ -4,7 +4,7 @@ import { RouterLink } from 'vue-router'
 
 const allTags = ref([])
 const loading = ref(true)
-const API_URL = 'http://127.0.0.1:8081'
+const API_URL = '/api'
 
 // 获取所有标签
 const fetchAllTags = async () => {
