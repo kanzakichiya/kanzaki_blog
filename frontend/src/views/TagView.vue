@@ -8,7 +8,7 @@ const route = useRoute()
 const posts = ref([])
 const tagInfo = ref(null)
 const loading = ref(true)
-const API_URL = 'http://127.0.0.1:8081'
+const API_URL = '/api'
 
 // --- 摘要生成 (和 HomeView 一样) ---
 const getSummary = (text) => {
