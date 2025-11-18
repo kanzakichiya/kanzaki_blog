@@ -40,7 +40,7 @@
 
 1.  **克隆仓库:**
     ```bash
-    git clone https://github.com/kanzakichiya/kanzaki_blog_project.git
+    git clone https://github.com/kanzakichiya/kanzaki_blog.git
     cd my_blog_project
     ```
 
