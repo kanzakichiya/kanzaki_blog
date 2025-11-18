@@ -15,7 +15,7 @@ const postId = route.params.id
 // --- 获取文章详情 (公开) ---
 const fetchPost = async () => {
   try {
-    const res = await fetch(`http://127.0.0.1:8081/posts/${postId}`)
+    const res = await fetch(`/api/posts/${postId}`)
     if (res.ok) {
       post.value = await res.json()
     } else {
