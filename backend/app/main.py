@@ -5,15 +5,17 @@ from fastapi import (
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordRequestForm
 from fastapi.staticfiles import StaticFiles
-from sqlmodel import Session, select, SQLModel # 1. 确保 SQLModel 被导入
-from sqlalchemy.orm import selectinload
+from sqlmodel import Session, select, SQLModel # 导入 SQLModel
+from sqlalchemy.orm import selectinload # 导入 selectinload
 from typing import List
-import os # 2. 确保 os 被导入
+import os
 import uuid
 
-from .database import create_db_and_tables, get_session, engine # 3. 确保 engine 被导入
+# 修复 1：导入 engine
+from .database import create_db_and_tables, get_session, engine 
+
 from .models import (
-    Post, PostCreate, PostRead, PostBase,
+    Post, PostCreate, PostRead, PostBase, # 修复 2：导入 PostBase
     User, UserCreate, UserRead,
     Tag, TagCreate, TagRead, PostReadWithTags,
     PostTagLink
@@ -46,18 +48,15 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 # --- 启动事件 (自动创建管理员) ---
 @app.on_event("startup")
 def on_startup():
-    # a. 创建数据库表
     create_db_and_tables()
-
-    # b. 从环境变量读取管理员配置
+    
     ADMIN_USER = os.environ.get("ADMIN_USER")
     ADMIN_PASS = os.environ.get("ADMIN_PASSWORD")
     ADMIN_EMAIL = os.environ.get("ADMIN_EMAIL", "admin@example.com")
 
     if ADMIN_USER and ADMIN_PASS:
-        # c. 使用一个临时的数据库会话
-        with Session(engine) as session: # 确保 engine 已导入
-            # d. 检查管理员是否已存在
+        # 修复 1：这里的 'engine' 现在已定义
+        with Session(engine) as session: 
             user = session.exec(select(User).where(User.username == ADMIN_USER)).first()
             if not user:
                 print(f"创建默认管理员: {ADMIN_USER}")
@@ -85,7 +84,8 @@ def get_current_user(token: str = Depends(oauth2_scheme), session: Session = Dep
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="用户不存在")
     return user
 
-@app.post("/users", response_model=UserRead, tags=["Auth"])
+# 修复 3：统一添加 /api 前缀
+@app.post("/api/users", response_model=UserRead, tags=["Auth"])
 def create_user(user: UserCreate, session: Session = Depends(get_session)):
     existing_user = session.exec(select(User).where(User.username == user.username)).first()
     if existing_user:
@@ -97,7 +97,8 @@ def create_user(user: UserCreate, session: Session = Depends(get_session)):
     session.refresh(db_user)
     return db_user
 
-@app.post("/token", tags=["Auth"])
+# 修复 3：统一添加 /api 前缀
+@app.post("/api/token", tags=["Auth"])
 def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), session: Session = Depends(get_session)):
     user = session.exec(select(User).where(User.username == form_data.username)).first()
     if not user or not verify_password(form_data.password, user.hashed_password):
@@ -109,12 +110,14 @@ def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), ses
     access_token = create_access_token(data={"sub": user.username})
     return {"access_token": access_token, "token_type": "bearer"}
 
-@app.get("/users/me", response_model=UserRead, tags=["Auth"])
+# 修复 3：统一添加 /api 前缀
+@app.get("/api/users/me", response_model=UserRead, tags=["Auth"])
 def read_users_me(current_user: User = Depends(get_current_user)):
     return current_user
 
 # === 图片上传 ===
-@app.post("/upload-image", tags=["Posts"])
+# 修复 3：统一添加 /api 前缀
+@app.post("/api/upload-image", tags=["Posts"])
 async def upload_image(file: UploadFile = File(...), current_user: User = Depends(get_current_user)):
     file_extension = os.path.splitext(file.filename)[1]
     unique_filename = f"{uuid.uuid4()}{file_extension}"
@@ -126,12 +129,13 @@ async def upload_image(file: UploadFile = File(...), current_user: User = Depend
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"文件保存失败: {e}")
     
-    # 修复：返回相对路径，由 Nginx 处理
+    # 修复：返回相对路径
     url = f"/static/images/{unique_filename}"
     return {"url": url}
 
 # === 标签接口 ===
-@app.post("/tags", response_model=TagRead, tags=["Tags"])
+# 修复 3：统一添加 /api 前缀
+@app.post("/api/tags", response_model=TagRead, tags=["Tags"])
 def create_tag(tag: TagCreate, session: Session = Depends(get_session), current_user: User = Depends(get_current_user)):
     existing_tag = session.exec(select(Tag).where(Tag.name == tag.name)).first()
     if existing_tag:
@@ -142,19 +146,22 @@ def create_tag(tag: TagCreate, session: Session = Depends(get_session), current_
     session.refresh(db_tag)
     return db_tag
 
-@app.get("/tags", response_model=List[TagRead], tags=["Tags"])
+# 修复 3：统一添加 /api 前缀
+@app.get("/api/tags", response_model=List[TagRead], tags=["Tags"])
 def read_tags(session: Session = Depends(get_session)):
     tags = session.exec(select(Tag)).all()
     return tags
 
-@app.get("/tags/{tag_id}", response_model=TagRead, tags=["Tags"])
+# 修复 3：统一添加 /api 前缀
+@app.get("/api/tags/{tag_id}", response_model=TagRead, tags=["Tags"])
 def read_tag(tag_id: int, session: Session = Depends(get_session)):
     db_tag = session.get(Tag, tag_id)
     if not db_tag:
         raise HTTPException(status_code=404, detail="标签未找到")
     return db_tag
 
-@app.delete("/tags/{tag_id}", status_code=204, tags=["Tags"])
+# 修复 3：统一添加 /api 前缀
+@app.delete("/api/tags/{tag_id}", status_code=204, tags=["Tags"])
 def delete_tag(tag_id: int, session: Session = Depends(get_session), current_user: User = Depends(get_current_user)):
     db_tag = session.get(Tag, tag_id)
     if not db_tag:
@@ -167,8 +174,10 @@ def delete_tag(tag_id: int, session: Session = Depends(get_session), current_use
     return None
 
 # === 文章接口 (受保护) ===
-@app.post("/posts", response_model=PostRead, tags=["Posts"])
+# 修复 3：统一添加 /api 前缀
+@app.post("/api/posts", response_model=PostRead, tags=["Posts"])
 def create_post(post: PostCreate, session: Session = Depends(get_session), current_user: User = Depends(get_current_user)):
+    # 修复 2：这里的 'PostBase' 现在已定义
     post_base = PostBase(title=post.title, content=post.content, summary=post.summary)
     db_post = Post.from_orm(post_base)
     if post.tags:
@@ -177,10 +186,11 @@ def create_post(post: PostCreate, session: Session = Depends(get_session), curre
     session.add(db_post)
     session.commit()
     session.refresh(db_post)
-    _ = db_post.tags 
+    _ = db_post.tags # 修复：懒加载
     return db_post
 
-@app.put("/posts/{post_id}", response_model=PostRead, tags=["Posts"])
+# 修复 3：统一添加 /api 前缀
+@app.put("/api/posts/{post_id}", response_model=PostRead, tags=["Posts"])
 def update_post(post_id: int, post_data: PostCreate, session: Session = Depends(get_session), current_user: User = Depends(get_current_user)):
     db_post = session.get(Post, post_id)
     if not db_post:
@@ -196,10 +206,11 @@ def update_post(post_id: int, post_data: PostCreate, session: Session = Depends(
     session.add(db_post)
     session.commit()
     session.refresh(db_post)
-    _ = db_post.tags
+    _ = db_post.tags # 修复：懒加载
     return db_post
 
-@app.delete("/posts/{post_id}", status_code=204, tags=["Posts"])
+# 修复 3：统一添加 /api 前缀
+@app.delete("/api/posts/{post_id}", status_code=204, tags=["Posts"])
 def delete_post(post_id: int, session: Session = Depends(get_session), current_user: User = Depends(get_current_user)):
     post = session.get(Post, post_id)
     if not post:
@@ -208,35 +219,37 @@ def delete_post(post_id: int, session: Session = Depends(get_session), current_u
     session.commit()
     return None
 
-# === 新增：站点配置模型 ===
+# === 站点配置接口 (公开) ===
 class SiteConfig(SQLModel):
     blog_title: str
 
-# === 新增：站点配置接口 (公开) ===
+# 修复 3：统一添加 /api 前缀
 @app.get("/api/config", response_model=SiteConfig, tags=["Public"])
 def get_site_config():
-    # 从 .env 读取我们刚设置的变量，如果没设置，就用 'My Blog' 作为备用
     title = os.environ.get("BLOG_OWNER_NAME", "My Blog")
     return SiteConfig(blog_title=title)
 
 
 # === 文章接口 (公开) ===
-@app.get("/posts", response_model=List[PostRead], tags=["Public"])
+# 修复 3：统一添加 /api 前缀
+@app.get("/api/posts", response_model=List[PostRead], tags=["Public"])
 def read_posts(session: Session = Depends(get_session)):
-    statement = select(Post).options(selectinload(Post.tags))
+    statement = select(Post).options(selectinload(Post.tags)) # 修复：懒加载
     posts = session.exec(statement).all()
     return posts
 
-@app.get("/posts/{post_id}", response_model=PostReadWithTags, tags=["Public"])
+# 修复 3：统一添加 /api 前缀
+@app.get("/api/posts/{post_id}", response_model=PostReadWithTags, tags=["Public"])
 def read_post(post_id: int, session: Session = Depends(get_session)):
-    statement = select(Post).where(Post.id == post_id).options(selectinload(Post.tags))
+    statement = select(Post).where(Post.id == post_id).options(selectinload(Post.tags)) # 修复：懒加载
     post = session.exec(statement).first()
     if not post:
         raise HTTPException(status_code=404, detail="文章未找到")
     return post
 
-@app.get("/posts/by_tag/{tag_id}", response_model=List[PostRead], tags=["Public"])
+# 修复 3：统一添加 /api 前缀
+@app.get("/api/posts/by_tag/{tag_id}", response_model=List[PostRead], tags=["Public"])
 def read_posts_by_tag(tag_id: int, session: Session = Depends(get_session)):
-    statement = select(Post).where(Post.tags.any(Tag.id == tag_id)).options(selectinload(Post.tags))
+    statement = select(Post).where(Post.tags.any(Tag.id == tag_id)).options(selectinload(Post.tags)) # 修复：懒加载
     posts = session.exec(statement).all()
     return posts
