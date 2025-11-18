@@ -22,7 +22,7 @@ const handleLogin = async () => {
   body.append('password', password.value)
 
   try {
-    const response = await fetch('http://127.0.0.1:8081/token', {
+    const response = await fetch('/api/token', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded'
