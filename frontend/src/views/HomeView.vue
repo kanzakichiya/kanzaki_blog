@@ -2,29 +2,38 @@
 import { ref, onMounted } from 'vue'
 import { marked } from 'marked'
 import DOMPurify from 'dompurify'
-import { RouterLink } from 'vue-router' // 确保导入 RouterLink
+import { RouterLink } from 'vue-router'
 
 const posts = ref([])
-const API_URL = '/api/posts'
 const typingText = ref('')
+const blogTitle = ref('...') // 1. 默认值
+const API_URL = '/api' // 2. 确保这是相对路径
 
 // --- 获取文章列表 ---
 const fetchPosts = async () => {
   try {
-    const response = await fetch(API_URL)
+    const response = await fetch(`${API_URL}/posts`)
     posts.value = await response.json()
   } catch (error) { console.error(error) }
 }
 
-// --- 摘要生成 ---
-const getSummary = (text) => {
-  if (!text) return '';
-  const rawHtml = marked.parse(text)
-  const cleanText = rawHtml.replace(/<[^>]+>/g, '') // 去掉 HTML 标签只留纯文本
-  return cleanText.substring(0, 100) + (cleanText.length > 100 ? '...' : '')
+// --- 3. 新增：获取站点配置 ---
+const fetchSiteConfig = async () => {
+  try {
+    const response = await fetch(`${API_URL}/config`)
+    if (response.ok) {
+      const data = await response.json()
+      blogTitle.value = data.blog_title // 4. 设置标题
+    } else {
+      blogTitle.value = "My Blog" // 失败时的备用标题
+    }
+  } catch (error) {
+    console.error(error)
+    blogTitle.value = "My Blog"
+  }
 }
 
-// --- 打字机动画逻辑 ---
+// --- 打字机动画 ---
 const startTyping = () => {
   const text = "全栈开发者 & 开源贡献者"
   let i = 0
@@ -35,10 +44,20 @@ const startTyping = () => {
   }, 100)
 }
 
+// --- 5. 修改：页面加载时 ---
 onMounted(() => {
   fetchPosts()
+  fetchSiteConfig() // <-- 同时获取配置
   startTyping()
 })
+
+// --- 摘要生成 ---
+const getSummary = (text) => {
+  if (!text) return '';
+  const rawHtml = marked.parse(text)
+  const cleanText = rawHtml.replace(/<[^>]+>/g, '')
+  return cleanText.substring(0, 100) + (cleanText.length > 100 ? '...' : '')
+}
 </script>
 
 <template>
@@ -46,7 +65,8 @@ onMounted(() => {
     
     <section class="hero">
       <div class="hero-content">
-        <h1>Hi, I'm <span class="highlight">Kanzaki Chiya</span></h1>
+        <h1>Hi, I'm <span class="highlight">{{ blogTitle }}</span></h1>
+        
         <p class="subtitle">{{ typingText }}<span class="cursor">|</span></p>
         <div class="hero-btns">
           <a href="#blog-section" class="btn primary">阅读博客</a>
@@ -64,7 +84,6 @@ onMounted(() => {
 
       <div class="blog-grid">
         <article v-for="post in posts.slice().reverse()" :key="post.id" class="blog-card">
-          
           <div class="card-header">
             <div class="tags-container">
               <RouterLink v-for="tag in post.tags" :key="tag.id" :to="'/tags/' + tag.id" class="tag-link">
@@ -76,7 +95,6 @@ onMounted(() => {
             </div>
             <span class="date">{{ new Date(post.created_at).toLocaleDateString() }}</span>
           </div>
-
           <h3>
             <RouterLink :to="'/posts/' + post.id" class="post-title-link">
               {{ post.title }}
@@ -94,7 +112,7 @@ onMounted(() => {
 </template>
 
 <style scoped>
-/* --- 1. Hero 区域样式 --- */
+/* --- 所有 CSS 样式保持不变 --- */
 .hero {
   position: relative;
   height: 90vh;
@@ -169,8 +187,6 @@ h1 {
   0%, 100% { transform: translate(0, 0); }
   50% { transform: translate(30px, 50px); }
 }
-
-/* --- 2. 博客列表样式 --- */
 .content-section {
   max-width: 1200px;
   margin: 0 auto;
@@ -214,8 +230,6 @@ h1 {
   box-shadow: 0 20px 40px rgba(91, 206, 250, 0.15);
   border-color: rgba(91, 206, 250, 0.3);
 }
-
-/* --- 卡片头部样式 --- */
 .card-header {
   display: flex;
   justify-content: space-between;
@@ -230,8 +244,6 @@ h1 {
   flex-wrap: wrap;
   gap: 5px;
 }
-
-/* --- 新增：标签链接样式 --- */
 .tag-link {
   text-decoration: none;
 }
@@ -248,8 +260,6 @@ h1 {
   background: rgba(91, 206, 250, 0.3);
   box-shadow: 0 2px 4px rgba(91, 206, 250, 0.2);
 }
-
-/* --- 剩余卡片样式 --- */
 .blog-card h3 { margin-bottom: 1rem; font-size: 1.4rem; line-height: 1.4; }
 .post-title-link { text-decoration: none; color: #2c3e50; transition: color 0.2s; }
 .post-title-link:hover { color: var(--trans-pink); }
