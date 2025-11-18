@@ -12,11 +12,16 @@ const API_URL = '/api' // 2. 确保这是相对路径
 // --- 获取文章列表 ---
 const fetchPosts = async () => {
   try {
-    const response = await fetch(`${API_URL}/posts`)
-    posts.value = await response.json()
-  } catch (error) { console.error(error) }
+    const response = await fetch(API_URL)
+    if (response.ok) { // <--- 关键修复
+      posts.value = await response.json()
+    } else {
+      console.error("获取文章失败:", response.statusText)
+    }
+  } catch (error) { 
+    console.error("fetchPosts 捕获到错误:", error)
+  }
 }
-
 // --- 3. 新增：获取站点配置 ---
 const fetchSiteConfig = async () => {
   try {
