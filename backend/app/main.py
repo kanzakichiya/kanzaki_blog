@@ -12,7 +12,7 @@ from typing import List
 import os # 导入 os
 import uuid
 
-from .database import create_db_and_tables, get_session
+from .database import create_db_and_tables, get_session, engine
 from .models import (
     Post, PostCreate, PostRead, PostBase,
     User, UserCreate, UserRead,
