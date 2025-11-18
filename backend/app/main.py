@@ -30,7 +30,7 @@ from .security import (
 app = FastAPI()
 
 # --- CORS ---
-origins = ["http://localhost:5173", "http://127.0.0.1:5173"]
+origins = ["*"] # 允许所有来源
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
