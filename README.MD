@@ -6,7 +6,7 @@
     本项目已通过 Docker, Nginx 和 Postgres 完全容器化，可实现简单、高性能的一键部署。
   </p>
   <p>
-    <a href="README_EN.md"><strong>English Version (英文版)</strong></a>
+    <a href="README_EN.MD"><strong>English Version (英文版)</strong></a>
   </p>
 </div>
 
