@@ -5,7 +5,7 @@ import DOMPurify from 'dompurify'
 import { RouterLink } from 'vue-router' // 确保导入 RouterLink
 
 const posts = ref([])
-const API_URL = 'http://127.0.0.1:8081/posts'
+const API_URL = '/api/posts'
 const typingText = ref('')
 
 // --- 获取文章列表 ---
