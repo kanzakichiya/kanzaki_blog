@@ -33,7 +33,7 @@ const fetchPost = async () => {
 const deletePost = async () => {
   if (!confirm('确定要删除这篇文章吗？删除后无法恢复！')) return
   try {
-    const res = await fetch(`http://127.0.0.1:8081/posts/${postId}`, {
+    const res = await fetch(`/api/posts/${postId}`, {
       method: 'DELETE',
       headers: { ...authStore.authHeader }
     })
