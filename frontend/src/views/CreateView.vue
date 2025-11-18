@@ -30,7 +30,8 @@ const selectedTagIds = ref([])
 const newTagName = ref('')
 const isCreatingTag = ref(false)
 const isSubmitting = ref(false)
-const API_URL = 'http://127.0.0.1:8081'
+const API_URL = '/api' // 基础 URL
+const UPLOAD_URL = '/api/upload-image' // (在 handleUpload 中也修复)
 
 // --- 5. 图片上传 ---
 const handleUpload = async (files) => {
