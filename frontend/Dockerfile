@@ -1,6 +1,6 @@
 # --- 阶段 1: 构建 (Build Stage) ---
 # 使用 Node.js 镜像来构建 Vue 应用
-FROM node:18-alpine AS build
+FROM node:20-alpine AS build
 
 WORKDIR /app
 
