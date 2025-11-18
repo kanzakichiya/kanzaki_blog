@@ -213,7 +213,7 @@ class SiteConfig(SQLModel):
     blog_title: str
 
 # === 新增：站点配置接口 (公开) ===
-@app.get("/api/config", response_model=SiteConfig, tags=["Public"])
+@app.get("/config", response_model=SiteConfig, tags=["Public"])
 def get_site_config():
     # 从 .env 读取我们刚设置的变量，如果没设置，就用 'My Blog' 作为备用
     title = os.environ.get("BLOG_OWNER_NAME", "My Blog")
