@@ -40,7 +40,7 @@ This is the easiest and recommended way to deploy the application on a server.
 
 1.  **Clone the repository:**
     ```bash
-    git clone [https://github.com/your-username/my_blog_project.git](https://github.com/your-username/my_blog_project.git)
+    git clone https://github.com/kanzakichiya/kanzaki_blog_project.git
     cd my_blog_project
     ```
 
