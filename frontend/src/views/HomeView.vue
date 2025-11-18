@@ -6,31 +6,39 @@ import { RouterLink } from 'vue-router'
 
 const posts = ref([])
 const typingText = ref('')
-const blogTitle = ref('...') // 1. 默认值
-const API_URL = '/api' // 2. 确保这是相对路径
+const blogTitle = ref('...') 
+
+// 1. 修复：API_URL 必须是 '/api'
+const API_URL = '/api' 
 
 // --- 获取文章列表 ---
 const fetchPosts = async () => {
   try {
-    const response = await fetch(API_URL)
-    if (response.ok) { // <--- 关键修复
+    // 2. 修复：请求正确的路径 /api/posts
+    const response = await fetch(`${API_URL}/posts`) 
+
+    // 3. 修复：添加 .ok 检查，防止在 404 时崩溃
+    if (response.ok) {
       posts.value = await response.json()
     } else {
       console.error("获取文章失败:", response.statusText)
+      posts.value = [] // 确保 posts 仍然是一个数组
     }
   } catch (error) { 
     console.error("fetchPosts 捕获到错误:", error)
+    posts.value = [] // 确保 posts 仍然是一个数组
   }
 }
-// --- 3. 新增：获取站点配置 ---
+
+// --- 获取站点配置 ---
 const fetchSiteConfig = async () => {
   try {
-    const response = await fetch(`${API_URL}/config`)
+    const response = await fetch(`${API_URL}/config`) // 这会请求 /api/config
     if (response.ok) {
       const data = await response.json()
-      blogTitle.value = data.blog_title // 4. 设置标题
+      blogTitle.value = data.blog_title
     } else {
-      blogTitle.value = "My Blog" // 失败时的备用标题
+      blogTitle.value = "My Blog"
     }
   } catch (error) {
     console.error(error)
@@ -49,10 +57,10 @@ const startTyping = () => {
   }, 100)
 }
 
-// --- 5. 修改：页面加载时 ---
+// --- 页面加载 ---
 onMounted(() => {
   fetchPosts()
-  fetchSiteConfig() // <-- 同时获取配置
+  fetchSiteConfig()
   startTyping()
 })
 
