@@ -1,6 +1,6 @@
 <script setup>
 import { ref, onMounted } from 'vue'
-import { useRoute, useRouter, RouterLink } from 'vue-router' // 确保导入 RouterLink
+import { useRoute, useRouter, RouterLink } from 'vue-router'
 import { marked } from 'marked'
 import DOMPurify from 'dompurify'
 import { useAuthStore } from '../stores/auth'
@@ -10,250 +10,132 @@ const router = useRouter()
 const authStore = useAuthStore()
 const post = ref(null)
 const loading = ref(true)
-const postId = route.params.id
 
-// --- 获取文章详情 (公开) ---
 const fetchPost = async () => {
   try {
-    const res = await fetch(`/api/posts/${postId}`)
-    if (res.ok) {
-      post.value = await res.json()
-    } else {
-      alert("文章不存在")
-      router.push('/')
-    }
-  } catch (e) {
-    console.error(e)
-  } finally {
-    loading.value = false
-  }
+    const res = await fetch(`/api/posts/${route.params.id}`)
+    if (res.ok) post.value = await res.json()
+    else router.push('/')
+  } catch (e) { console.error(e) }
+  finally { loading.value = false }
 }
 
-// --- 删除文章逻辑 (需要 Token) ---
 const deletePost = async () => {
-  if (!confirm('确定要删除这篇文章吗？删除后无法恢复！')) return
+  if (!confirm('确定删除?')) return
   try {
-    const res = await fetch(`/api/posts/${postId}`, {
+    const res = await fetch(`/api/posts/${route.params.id}`, {
       method: 'DELETE',
       headers: { ...authStore.authHeader }
     })
-    if (res.ok) {
-      alert("删除成功")
-      router.push('/')
-    } else {
-      if (res.status === 401) {
-        alert("认证失败，请重新登录。")
-        authStore.logout()
-        router.push('/login')
-      } else {
-        alert("删除失败")
-      }
-    }
-  } catch (error) {
-    console.error("删除出错:", error)
-    alert("网络错误")
-  }
+    if (res.ok) router.push('/')
+  } catch (e) { alert('Error') }
 }
 
-// --- Markdown 渲染 ---
-const renderContent = (text) => {
-  if (!text) return ''
-  return DOMPurify.sanitize(marked.parse(text))
-}
-
+const renderContent = (text) => DOMPurify.sanitize(marked.parse(text || ''))
 onMounted(fetchPost)
 </script>
 
 <template>
-  <div class="detail-page">
-    <div v-if="loading" class="loading">
-      <div class="spinner"></div>
-    </div>
+  <div class="detail-container">
+    <div v-if="loading" class="loading-spinner"></div>
     
-    <div v-else-if="post" class="article-container">
-      
-      <div v-if="authStore.isAuthenticated" class="action-bar">
-        <button @click="router.push('/')" class="btn-back">← 返回</button>
-        <div class="right-actions">
-          <button @click="router.push(`/edit/${postId}`)" class="btn-edit">
-            ✏️ 编辑
-          </button>
-          <button @click="deletePost" class="btn-delete">
-            🗑️ 删除
-          </button>
+    <article v-else-if="post" class="article-wrapper">
+      <div class="post-nav">
+        <button @click="router.push('/')" class="btn-back">
+          <span class="icon">←</span> 返回首页
+        </button>
+        <div v-if="authStore.isAuthenticated" class="admin-controls">
+          <button @click="router.push(`/edit/${post.id}`)" class="btn-icon">✎</button>
+          <button @click="deletePost" class="btn-icon delete">🗑</button>
         </div>
       </div>
-      <div v-else class="action-bar">
-        <button @click="router.push('/')" class="btn-back">← 返回</button>
-      </div>
 
-      <h1 class="title">{{ post.title }}</h1>
-      
-      <div class="meta">
-        <span>📅 {{ new Date(post.created_at).toLocaleString() }}</span>
-      </div>
+      <header class="post-header">
+        <div class="post-tags">
+          <span v-for="tag in post.tags" :key="tag.id" class="hash-tag">#{{ tag.name }}</span>
+        </div>
+        <h1 class="post-h1">{{ post.title }}</h1>
+        <div class="post-meta">
+          <span class="date">发布于 {{ new Date(post.created_at).toLocaleDateString() }}</span>
+        </div>
+      </header>
 
-      <div class="tags-container-detail">
-        <RouterLink v-for="tag in post.tags" :key="tag.id" :to="'/tags/' + tag.id" class="tag-link">
-          <span class="tag">
-            🏷️ {{ tag.name }}
-          </span>
-        </RouterLink>
-      </div>
-      <hr class="divider" />
-
-      <div class="markdown-body content" v-html="renderContent(post.content)"></div>
-    </div>
+      <div class="markdown-body" v-html="renderContent(post.content)"></div>
+    </article>
   </div>
 </template>
 
 <style scoped>
-.detail-page { 
-  max-width: 800px; 
-  margin: 0 auto; 
-  padding: 100px 20px 40px; 
+.detail-container {
+  background-color: #fff;
+  min-height: 100vh;
 }
 
-/* --- 加载动画 --- */
-.loading { 
-  display: flex; 
-  justify-content: center; 
-  padding: 50px; 
-}
-.spinner {
-  width: 40px; 
-  height: 40px;
-  border: 3px solid #f3f3f3;
-  border-top: 3px solid var(--trans-blue);
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-}
-@keyframes spin { 
-  0% { transform: rotate(0deg); } 
-  100% { transform: rotate(360deg); } 
+.article-wrapper {
+  max-width: 720px; /* 最佳阅读宽度 */
+  margin: 0 auto;
+  padding: 40px 20px 100px;
 }
 
-/* --- 操作栏 --- */
-.action-bar {
+/* 顶部导航 */
+.post-nav {
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  margin-bottom: 30px;
-  min-height: 38px; 
-}
-.right-actions { 
-  display: flex; 
-  gap: 10px;
+  margin-bottom: 3rem;
 }
 .btn-back {
   background: none;
   border: none;
-  color: #666;
-  cursor: pointer;
-  font-size: 1rem;
-  padding: 0;
-  transition: color 0.2s;
-}
-.btn-back:hover { 
-  color: var(--trans-blue); 
-}
-.btn-edit {
-  background-color: white;
-  color: var(--trans-blue);
-  border: 1px solid var(--trans-blue);
-  padding: 8px 16px;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 0.9rem;
-  transition: all 0.2s;
+  color: var(--text-light);
   font-weight: 500;
-}
-.btn-edit:hover {
-  background-color: var(--trans-blue);
-  color: white;
-}
-.btn-delete {
-  background-color: #fff0f0;
-  color: #ff4d4f;
-  border: 1px solid #ffccc7;
-  padding: 8px 16px;
-  border-radius: 6px;
   cursor: pointer;
-  transition: all 0.2s;
-  font-size: 0.9rem;
-  font-weight: 500;
-}
-.btn-delete:hover {
-  background-color: #ff4d4f;
-  color: white;
-  border-color: #ff4d4f;
-}
-
-/* --- 文章内容 --- */
-.title { 
-  font-size: 2.5rem; 
-  color: #333; 
-  margin-bottom: 10px; 
-  line-height: 1.3; 
-}
-.meta { 
-  color: #999; 
-  font-size: 14px; 
-  margin-bottom: 15px;
-}
-
-/* --- 新增：详情页标签样式 --- */
-.tags-container-detail {
   display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  margin-bottom: 30px;
+  align-items: center;
+  gap: 5px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  transition: background 0.2s;
 }
-.tag-link {
-  text-decoration: none;
-}
-.tags-container-detail .tag {
-  background-color: #f0f9ff;
-  color: var(--trans-blue);
-  padding: 5px 12px;
-  border-radius: 20px;
-  font-size: 0.9rem;
-  font-weight: 500;
-  border: 1px solid rgba(91, 206, 250, 0.3);
+.btn-back:hover { background: #f3f4f6; color: var(--text-main); }
+
+.admin-controls { display: flex; gap: 10px; }
+.btn-icon {
+  width: 36px; height: 36px;
+  border: 1px solid #e5e7eb;
+  background: #fff;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--text-light);
   transition: all 0.2s;
 }
-.tags-container-detail .tag-link:hover .tag {
-  background: rgba(91, 206, 250, 0.2);
-  border-color: rgba(91, 206, 250, 0.5);
-  box-shadow: 0 2px 4px rgba(91, 206, 250, 0.1);
+.btn-icon:hover { border-color: var(--primary); color: var(--primary); }
+.btn-icon.delete:hover { border-color: #ef4444; color: #ef4444; }
+
+/* 文章头部 */
+.post-header { text-align: center; margin-bottom: 4rem; }
+.post-tags { margin-bottom: 1rem; color: var(--primary); font-weight: 600; font-size: 0.9rem; }
+.hash-tag { margin: 0 5px; }
+.post-h1 {
+  font-size: 2.5rem;
+  font-weight: 800;
+  line-height: 1.2;
+  color: #111;
+  margin-bottom: 1rem;
+}
+.post-meta { color: var(--text-light); font-size: 0.9rem; }
+
+/* 正文优化 */
+.markdown-body {
+  font-size: 1.1rem;
+  line-height: 1.8;
+  color: #374151;
 }
 
-.divider { 
-  border: 0; 
-  border-top: 1px solid #eee; 
-  margin: 30px 0; 
-}
-.content { 
-  line-height: 1.8; 
-  font-size: 17px; 
-  color: #2c3e50; 
-}
-
-/* Markdown 样式穿透 */
-:deep(.markdown-body h2) {
-  border-bottom: 1px solid #eee;
-  padding-bottom: 10px;
-  margin-top: 30px;
-}
-:deep(.markdown-body img) { 
-  max-width: 100%; 
-  border-radius: 8px; 
-  box-shadow: 0 4px 12px rgba(0,0,0,0.1); 
-}
-:deep(.markdown-body pre) {
-  background-color: #f6f8fa;
-  padding: 1rem;
-  border-radius: 6px;
-  overflow-x: auto;
-}
+/* 针对 Markdown 内容的特定样式覆盖 */
+:deep(h2) { margin-top: 3rem; margin-bottom: 1rem; font-size: 1.8rem; font-weight: 700; color: #111; }
+:deep(p) { margin-bottom: 1.5rem; }
+:deep(img) { border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); max-width: 100%; }
+:deep(blockquote) { border-left: 4px solid var(--primary); background: #f9fafb; padding: 1rem; color: var(--text-light); }
+:deep(pre) { background: #1f2937 !important; border-radius: 8px; padding: 1.5rem; }
 </style>

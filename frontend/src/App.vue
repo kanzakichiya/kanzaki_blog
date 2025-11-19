@@ -6,8 +6,9 @@ import { useAuthStore } from './stores/auth'
 const router = useRouter()
 const authStore = useAuthStore()
 const isScrolled = ref(false)
+
 const handleScroll = () => {
-  isScrolled.value = window.scrollY > 50
+  isScrolled.value = window.scrollY > 20
 }
 
 onMounted(() => window.addEventListener('scroll', handleScroll))
@@ -22,192 +23,184 @@ const handleLogout = () => {
 <template>
   <nav class="navbar" :class="{ 'scrolled': isScrolled }">
     <div class="nav-container">
-      
-      <RouterLink to="/" class="logo-icon">
-        <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="20" cy="20" r="18" stroke="#5BCEFA" stroke-width="3" stroke-opacity="0.3"/><circle cx="20" cy="20" r="10" fill="#F5A9B8"/><path d="M35 20C35 28.2843 28.2843 35 20 35" stroke="#5BCEFA" stroke-width="3" stroke-linecap="round"/><circle cx="28" cy="12" r="4" fill="#5BCEFA"/></svg>
+      <RouterLink to="/" class="logo-group">
+        <div class="logo-icon">
+          <svg width="32" height="32" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="20" cy="20" r="18" stroke="currentColor" stroke-width="3" class="stroke-blue"/>
+            <circle cx="20" cy="20" r="10" class="fill-pink"/>
+            <circle cx="28" cy="12" r="4" class="fill-blue"/>
+          </svg>
+        </div>
+        <span class="logo-text">Kanzaki<span class="highlight">.Blog</span></span>
       </RouterLink>
 
       <div class="nav-links">
-        <RouterLink to="/" class="nav-link-text">首页</RouterLink>
-        <RouterLink to="/tags" class="nav-link-text">分类</RouterLink>
+        <RouterLink to="/" class="nav-item">首页</RouterLink>
+        <RouterLink to="/tags" class="nav-item">标签</RouterLink>
         
-        <template v-if="authStore.isAuthenticated">
-          <RouterLink to="/create" class="btn-nav">写文章</RouterLink>
-          <button @click="handleLogout" class="btn-logout">退出登录</button>
-        </template>
-        
-        <template v-else>
-          <RouterLink to="/login" class="btn-nav login">登录</RouterLink>
-        </template>
-        
+        <div class="auth-actions">
+          <template v-if="authStore.isAuthenticated">
+            <RouterLink to="/create" class="btn-primary">写文章</RouterLink>
+            <button @click="handleLogout" class="btn-text">退出</button>
+          </template>
+          <template v-else>
+            <RouterLink to="/login" class="btn-secondary">登录</RouterLink>
+          </template>
+        </div>
       </div>
     </div>
   </nav>
 
   <main>
-    <RouterView />
+    <RouterView v-slot="{ Component }">
+      <transition name="fade" mode="out-in">
+        <component :is="Component" />
+      </transition>
+    </RouterView>
   </main>
 
   <footer>
-    <div class="footer-content">
-      <p>&copy; 2025 Kanzaki Chiya. Made with <span class="heart">❤</span> and Vue 3.</p>
-    </div>
+    <p>&copy; 2025 Kanzaki Chiya. <span class="separator">|</span> Designed with <span class="heart">❤</span></p>
   </footer>
 </template>
 
 <style>
-/* --- 全局变量 (保持不变) --- */
+/* --- 全局变量重构 --- */
 :root {
-  --trans-blue: #5BCEFA;
-  --trans-pink: #F5A9B8;
-  --text-main: #2c3e50;
-  --text-light: #666;
-  --bg-page: #ffffff;
-  --bg-soft: #f9fafb;
-}
-* { box-sizing: border-box; margin: 0; padding: 0; }
-body {
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-  background-color: var(--bg-page);
-  color: var(--text-main);
-  line-height: 1.6;
+  --primary: #5BCEFA;
+  --primary-hover: #4ab8e3;
+  --secondary: #F5A9B8;
+  --text-main: #1f2937;
+  --text-light: #6b7280;
+  --bg-body: #f3f4f6;
+  --bg-card: #ffffff;
+  --nav-height: 70px;
+  --radius-std: 12px;
 }
 
-/* --- 导航栏 (保持不变) --- */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background-color: var(--bg-body);
+  color: var(--text-main);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased; /* 字体抗锯齿 */
+  -moz-osx-font-smoothing: grayscale;
+}
+
+a { text-decoration: none; color: inherit; transition: 0.2s; }
+
+/* --- 导航栏优化 --- */
 .navbar {
   position: fixed;
   top: 0;
   width: 100%;
-  padding: 1.2rem 5%;
-  background: rgba(255, 255, 255, 0.8);
-  backdrop-filter: blur(10px);
+  height: var(--nav-height);
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(12px); /* 毛玻璃 */
+  border-bottom: 1px solid rgba(0,0,0,0.05);
   z-index: 1000;
   transition: all 0.3s ease;
 }
 .navbar.scrolled {
-  padding: 0.8rem 5%;
   background: rgba(255, 255, 255, 0.95);
-  box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
 }
+
 .nav-container {
-  max-width: 1200px;
+  max-width: 1100px;
   margin: 0 auto;
+  height: 100%;
+  padding: 0 1.5rem;
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
-.logo-icon {
+
+/* Logo */
+.logo-group {
   display: flex;
   align-items: center;
   gap: 10px;
-  text-decoration: none;
-  transition: transform 0.3s ease;
-}
-.logo-icon:hover {
-  transform: rotate(15deg) scale(1.1);
-}
-
-/* --- 
-  CSS 修复：
-  分离“文本链接”和“按钮链接”的样式
---- */
-
-.nav-links { 
-  display: flex; 
-  gap: 1.5rem;
-  align-items: center;
-}
-
-/* 1. 基础链接样式 (只管字体和过渡) */
-.nav-links a {
-  text-decoration: none;
-  font-weight: 500;
-  transition: color 0.3s, border-color 0.3s, transform 0.2s, box-shadow 0.2s;
-  /* 关键修复：
-    移除了这里的 padding 和 border-bottom！
-  */
-}
-
-/* 2. 仅“文本链接” (.nav-link-text) */
-.nav-link-text {
+  font-weight: 700;
+  font-size: 1.25rem;
   color: var(--text-main);
-  padding: 5px 0; /* padding 只在这里 */
-  border-bottom: 2px solid transparent; /* border 只在这里 */
 }
-.nav-link-text:hover { 
-  color: var(--trans-pink); 
-}
+.logo-icon svg { display: block; }
+.stroke-blue { stroke: var(--primary); opacity: 0.8; }
+.fill-pink { fill: var(--secondary); }
+.fill-blue { fill: var(--primary); }
+.highlight { color: var(--primary); }
 
-/* 3. 激活的“文本链接” */
-.nav-link-text.router-link-active {
-  color: var(--trans-blue);
+/* 导航项 */
+.nav-links { display: flex; gap: 2rem; align-items: center; }
+.nav-item {
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--text-light);
+  position: relative;
+}
+.nav-item:hover, .nav-item.router-link-active { color: var(--primary); }
+
+/* 按钮样式 */
+.auth-actions { display: flex; gap: 1rem; align-items: center; margin-left: 1rem; }
+
+.btn-primary {
+  background: var(--primary);
+  color: white;
+  padding: 0.5rem 1.2rem;
+  border-radius: 20px;
+  font-size: 0.9rem;
   font-weight: 600;
-  border-bottom: 2px solid var(--trans-blue);
+  box-shadow: 0 2px 4px rgba(91, 206, 250, 0.3);
+}
+.btn-primary:hover {
+  background: var(--primary-hover);
+  transform: translateY(-1px);
 }
 
-/* 4. “按钮链接” (.btn-nav) (现在它的 padding 不会再被覆盖了) */
-.btn-nav {
-  padding: 8px 20px; /* 现在这个会生效了！ */
-  background: linear-gradient(90deg, var(--trans-blue), var(--trans-pink));
-  color: white !important; 
-  border-radius: 50px;
-  font-weight: bold;
-  display: inline-block;
-}
-.btn-nav:hover { 
-  transform: translateY(-2px); 
-  opacity: 0.9; 
-  color: white !important;
-  box-shadow: 0 4px 12px rgba(91, 206, 250, 0.3);
-}
-
-/* 5. 激活的“按钮链接” (移除 border) */
-.btn-nav.router-link-active {
-  color: white !important;
-  font-weight: bold;
-  box-shadow: 0 0 10px rgba(91, 206, 250, 0.5), 0 0 10px rgba(245, 169, 184, 0.5);
-  border-bottom: none !important; /* 确保没有下划线 */
-}
-/* --- 修复结束 --- */
-
-
-/* 退出登录按钮 (保持不变) */
-.btn-logout {
-  background: none;
-  border: 1px solid #ddd;
-  color: #666;
-  padding: 8px 20px;
-  border-radius: 50px;
-  font-weight: bold;
-  cursor: pointer;
-  transition: all 0.2s;
+.btn-secondary {
+  color: var(--text-main);
+  font-weight: 500;
   font-size: 0.9rem;
 }
-.btn-logout:hover {
-  border-color: #ff4d4f;
-  color: #ff4d4f;
+.btn-secondary:hover { color: var(--primary); }
+
+.btn-text {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-light);
+  font-size: 0.9rem;
+}
+.btn-text:hover { color: #ef4444; }
+
+/* --- 主内容区 --- */
+main {
+  padding-top: var(--nav-height);
+  min-height: 85vh;
 }
 
-/* --- 页脚 (保持不变) --- */
+/* --- 页脚 --- */
 footer {
-  background: var(--bg-soft);
-  padding: 3rem 2rem;
+  padding: 3rem 0;
   text-align: center;
-  margin-top: 4rem;
   color: var(--text-light);
-  border-top: 1px solid #eee;
+  font-size: 0.9rem;
+  border-top: 1px solid rgba(0,0,0,0.05);
+  background: #fff;
+  margin-top: 4rem;
 }
-.heart { 
-  color: var(--trans-pink); 
-  display: inline-block;
-  animation: pulse 1.5s infinite;
-}
-main { 
-  min-height: 80vh;
-}
+.separator { margin: 0 8px; opacity: 0.3; }
+.heart { color: var(--secondary); display: inline-block; animation: pulse 1.5s infinite; }
+
+/* --- 过渡动画 --- */
+.fade-enter-active, .fade-leave-active { transition: opacity 0.2s ease; }
+.fade-enter-from, .fade-leave-to { opacity: 0; }
+
 @keyframes pulse {
-  0% { transform: scale(1); }
-  50% { transform: scale(1.2); }
-  100% { transform: scale(1); }
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.1); }
 }
 </style>
